@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>You've Got a Surprise!</title>
+    <style>
+        /* 1. BASIC STYLING (The Look) */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden; /* Prevents scrolling while scratching */
+        }
+
+        .card-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        /* 2. THE PRIZE LAYER (Bottom Layer) */
+        #prize-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1; /* Sits at the bottom */
+            background: #fff; /* White background behind the prize */
+        }
+
+        #prize-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d946ef; /* Hot Pink */
+            padding: 20px;
+            line-height: 1.4;
+        }
+
+        .confetti {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        /* 3. THE SCRATCH LAYER (Top Layer) */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2; /* Sits on top */
+            cursor: pointer;
+            border-radius: 15px; /* Matches container */
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        <div id="prize-layer">
+            <div class="confetti">🎉</div>
+            <div id="prize-text">Loading...</div>
+            <div class="confetti">🎉</div>
+        </div>
+
+        <canvas id="scratchCanvas"></canvas>
+    </div>
+
+    <p class="instructions">Use your finger or mouse to scratch!</p>
+
+    <script>
+        // --- PART 1: GET THE CUSTOM MESSAGE FROM URL ---
+        // This looks at the web address for "?msg=Your Text Here"
+        const urlParams = new URLSearchParams(window.location.search);
+        // If no message is found, default to "Surprise!"
+        const message = urlParams.get('msg') || "Surprise! You found it!";
+        
+        // Inject the message into the page
+        document.getElementById('prize-text').innerText = message;
+
+
+        // --- PART 2: THE SCRATCH MECHANIC ---
+        const canvas = document.getElementById('scratchCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.querySelector('.card-container');
+        
+        // Set canvas size to match the container exactly
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
+
+        // Create the "Gold Foil" look using code (no image needed)
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#D4AF37'); // Gold
+        gradient.addColorStop(0.5, '#F7EF8A'); // Light Gold
+        gradient.addColorStop(1, '#D4AF37'); // Gold
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Add "Scratch Here" text on top of the foil
+        ctx.fillStyle = "#555";
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("SCRATCH HERE", canvas.width/2, canvas.height/2);
+
+        // Function to handle the scratching (making pixels transparent)
+        let isDrawing = false;
+
+        function scratch(x, y) {
+            ctx.globalCompositeOperation = 'destination-out'; // This makes it "erase" instead of paint
+            ctx.beginPath();
+            ctx.arc(x, y, 25, 0, 2 * Math.PI); // The size of the "brush" (25px radius)
+            ctx.fill();
+        }
+
+        // --- MOUSE EVENTS (For Computer) ---
+        canvas.addEventListener('mousedown', (e) => { isDrawing = true; });
+        canvas.addEventListener('mouseup', (e) => { isDrawing = false; });
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                const rect = canvas.getBoundingClientRect();
+                scratch(e.clientX - rect.left, e.clientY - rect.top);
+            }
+        });
+
+        // --- TOUCH EVENTS (For Mobile Phones) ---
+        canvas.addEventListener('touchstart', (e) => {
+            isDrawing = true;
+            e.preventDefault(); // Stop scrolling while scratching
+        }, {passive: false});
+        
+        canvas.addEventListener('touchend', (e) => { isDrawing = false; });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            if (isDrawing) {
+                e.preventDefault(); 
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                scratch(touch.clientX - rect.left, touch.clientY - rect.top);
+            }
+        }, {passive: false});
+
+    </script>
+</body>
+</html>
